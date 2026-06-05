@@ -6,18 +6,12 @@ public class TargetSpawner : MonoBehaviour
     [System.Serializable]
     public class SpawnPoint
     {
-        public Transform position;       // Posição do spawn (objeto vazio)
-        public GameObject targetPrefab;  // Qual target (Alvo) vai nascer
-        public int quantity = 1;         // Quantos targets
-        public Vector3 scale = Vector3.one; // Tamanho
-        public Vector3 rotation = Vector3.zero; // Rotação
-
-        // Movimento
+        public Transform position;
+        public GameObject targetPrefab;
+        public int quantity = 1;
+        public Vector3 scale = Vector3.one;
         public bool moveHorizontal = false;
         public bool moveVertical = false;
-        public float moveSpeed = 3f;
-        public float moveRange = 5f;
-
         public int health = 1;
         public int pointsValue = 10;
     }
@@ -25,71 +19,40 @@ public class TargetSpawner : MonoBehaviour
     public List<SpawnPoint> spawnPoints = new List<SpawnPoint>();
     private List<GameObject> spawnedTargets = new List<GameObject>();
 
-    void Start()
-    {
-        SpawnAllTargets();
-    }
+    void Start() => SpawnAllTargets();
 
     void Update()
     {
-        // Remove targets destruídos da lista
         spawnedTargets.RemoveAll(t => t == null);
-
-        // Conta targets ativos por spawn point
-        foreach (SpawnPoint point in spawnPoints)
+        foreach (var point in spawnPoints)
         {
-            int currentCount = 0;
-            foreach (GameObject target in spawnedTargets)
-            {
-                if (target != null)
-                {
-                    // Usa o script Alvo que nós criamos anteriormente
-                    Alvo targetScript = target.GetComponent<Alvo>();
-                    if (targetScript != null && targetScript.spawnPoint == point)
-                        currentCount++;
-                }
-            }
-
-            // Se faltar target, cria um novo
-            if (currentCount < point.quantity)
-            {
-                SpawnTarget(point);
-            }
+            int count = 0;
+            foreach (var target in spawnedTargets)
+                if (target != null && target.GetComponent<Target>().spawnPoint == point) count++;
+            
+            if (count < point.quantity) SpawnTarget(point);
         }
     }
 
     void SpawnAllTargets()
     {
-        foreach (SpawnPoint point in spawnPoints)
-        {
-            for (int i = 0; i < point.quantity; i++)
-            {
-                SpawnTarget(point);
-            }
-        }
+        foreach (var point in spawnPoints)
+            for (int i = 0; i < point.quantity; i++) SpawnTarget(point);
     }
 
     void SpawnTarget(SpawnPoint point)
     {
         if (point.position == null || point.targetPrefab == null) return;
-
-        // Cria o target
-        GameObject target = Instantiate(point.targetPrefab, point.position.position, Quaternion.Euler(point.rotation));
+        GameObject target = Instantiate(point.targetPrefab, point.position.position, Quaternion.identity);
         target.transform.localScale = point.scale;
-
-        // Configura o target (Conectando com o seu Alvo.cs)
-        Alvo targetScript = target.GetComponent<Alvo>();
-        if (targetScript != null)
-        {
-            targetScript.spawnPoint = point;
-            targetScript.moveHorizontal = point.moveHorizontal;
-            targetScript.moveVertical = point.moveVertical;
-            targetScript.moveSpeed = point.moveSpeed;
-            targetScript.moveRange = point.moveRange;
-            targetScript.health = point.health;
-            targetScript.pointsValue = point.pointsValue;
-        }
-
+        
+        Target tScript = target.GetComponent<Target>();
+        tScript.spawnPoint = point;
+        tScript.moveHorizontal = point.moveHorizontal;
+        tScript.moveVertical = point.moveVertical;
+        tScript.health = point.health;
+        tScript.pointsValue = point.pointsValue;
+        
         spawnedTargets.Add(target);
     }
 }
