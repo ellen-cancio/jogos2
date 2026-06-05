@@ -1,31 +1,121 @@
 using UnityEngine;
-using TMPro;
-public class GameManager : MonoBehaviour {
-    public TextMeshProUGUI textoScore, textoAmmo;
+using TMPro; 
+using UnityEngine.SceneManagement; 
+
+public class GameManager : MonoBehaviour
+{
+    [Header("Textos da Interface")]
+    public TextMeshProUGUI textoScore;
+    public TextMeshProUGUI textoAmmo;
     public GameObject textoGameOver;
-    public int score = 0, municao = 30;
+
+    [Header("Valores do Jogo")]
+    public int score = 0;
+    public int municaoAtual = 10;
+    public int municaoMaxima = 10;
     public float tempo = 60f;
     private bool jogoAtivo = true;
 
-    void Start() { AtualizarTextos(); }
-    void Update() {
-        if (jogoAtivo) {
+    void Start()
+    {
+        Time.timeScale = 1f; // Garante que o tempo volte ao normal ao reiniciar!
+        municaoAtual = municaoMaxima; 
+        AtualizarTextos();
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+        {
+            ReiniciarJogo();
+        }
+
+        if (jogoAtivo)
+        {
             tempo -= Time.deltaTime;
             AtualizarTextos();
-            if (tempo <= 0 || municao <= 0) FimDeJogo();
+
+            if (tempo <= 0)
+            {
+                FimDeJogo();
+            }
         }
     }
-    public void AdicionarScore(int pontos) {
-        if (jogoAtivo) { score += pontos; AtualizarTextos(); }
+
+    public void AdicionarScore(int pontos)
+    {
+        if (jogoAtivo)
+        {
+            score += pontos;
+            AtualizarTextos();
+        }
     }
-    public void GastarMunicao() {
-        if (jogoAtivo && municao > 0) { municao--; AtualizarTextos(); }
+
+    public void GastarMunicao()
+    {
+        if (jogoAtivo && municaoAtual > 0)
+        {
+            municaoAtual--;
+            AtualizarTextos();
+        }
     }
-    void AtualizarTextos() {
-        textoScore.text = "Score: " + score;
-        textoAmmo.text = "Ammo: " + municao + " | Tempo: " + Mathf.RoundToInt(tempo);
+
+    public void RecarregarMunicao()
+    {
+        if (jogoAtivo)
+        {
+            municaoAtual = municaoMaxima;
+            AtualizarTextos();
+        }
     }
-    void FimDeJogo() {
-        jogoAtivo = false; tempo = 0; textoGameOver.SetActive(true);
+
+    public bool PodeAtirar()
+    {
+        return jogoAtivo && municaoAtual > 0;
+    }
+
+    public bool PrecisaRecarregar()
+    {
+        return municaoAtual < municaoMaxima;
+    }
+
+    public void MostrarTextoRecarregando()
+    {
+        if (textoAmmo != null)
+        {
+            textoAmmo.text = "Recarregando...";
+        }
+    }
+
+    void AtualizarTextos()
+    {
+        if (textoScore != null) textoScore.text = "Score: " + score;
+
+        if (textoAmmo != null)
+        {
+            textoAmmo.text = "Ammo: " + municaoAtual + " / " + municaoMaxima + " | Tempo: " + Mathf.RoundToInt(tempo);
+        }
+    }
+
+    // ALTERADO PARA PUBLIC: Agora o TargetSpawner pode chamar esta função!
+    public void FimDeJogo()
+    {
+        jogoAtivo = false;
+        tempo = 0;
+        if (textoGameOver != null) textoGameOver.SetActive(true);
+        Time.timeScale = 0f; // Pausa o jogo
+    }
+
+    void ReiniciarJogo()
+    {
+        string nomeDaCenaAtual = SceneManager.GetActiveScene().name;
+
+        if (string.IsNullOrEmpty(nomeDaCenaAtual))
+        {
+            Debug.LogError("⚠️ ALERTA: Você precisa salvar sua Fase antes de apertar Enter! Aperte Ctrl+S no Unity.");
+            return;
+        }
+
+        SceneManager.LoadScene(nomeDaCenaAtual);
     }
 }
